@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Keystroke Anti-Cheat Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #0f172a, #020617);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e5e7eb;
+        }
+
+        .card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 28px;
+            width: 100%;
+            max-width: 720px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            background: linear-gradient(90deg, #38bdf8, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            resize: vertical;
+            background: #020617;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            color: #e5e7eb;
+            font-size: 15px;
+            line-height: 1.5;
+            outline: none;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        textarea:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        button {
+            background: linear-gradient(135deg, #38bdf8, #a78bfa);
+            border: none;
+            color: #020617;
+            font-weight: 700;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.35);
+            opacity: 0.95;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="badge">Anti-Cheat Demo</div>
+        <div class="title">Keystroke Behavior Analyzer</div>
+        <div class="subtitle">
+            Type your answer below. The system analyzes how you type, not just what you type.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <textarea id="answerBox" name="answer" placeholder="Start typing your answer here..."></textarea>
+
+            <input type="hidden" name="keystroke_data" id="keystrokeData">
+            <input type="hidden" name="start_time" id="startTime">
+            <input type="hidden" name="end_time" id="endTime">
+
+            <div class="footer">
+                <div class="hint">
+                    ⌨️ Tip: Try normal typing vs copy-paste and see the difference.
+                </div>
+                <button type="submit">Analyze Answer</button>
+            </div>
+        </form>
+    </div>
+
+<script>
+let events = [];
+let lastTime = null;
+let lastLength = 0;
+let backspaceCount = 0;
+let started = false;
+
+let maxChunk = 0;
+let bigChunkCount = 0;
+let idleTimes = [];
+let pasteDetected = false;
+
+const box = document.getElementById("answerBox");
+const dataInput = document.getElementById("keystrokeData");
+const startInput = document.getElementById("startTime");
+const endInput = document.getElementById("endTime");
+
+// Detect paste
+box.addEventListener("paste", () => {
+    pasteDetected = true;
+});
+
+// Start time on first focus
+box.addEventListener("focus", () => {
+    if (!started) {
+        started = true;
+        startInput.value = Date.now();
+    }
+});
+
+// Track typing behavior
+box.addEventListener("input", () => {
+    const now = Date.now();
+    const currentLength = box.value.length;
+
+    let deltaTime = lastTime ? (now - lastTime) : 0;
+    let deltaLength = currentLength - lastLength;
+
+    if (deltaTime > 2000) {
+        idleTimes.push(deltaTime);
+    }
+
+    if (deltaLength < 0) {
+        backspaceCount += Math.abs(deltaLength);
+    }
+
+    const absChange = Math.abs(deltaLength);
+    if (absChange > maxChunk) maxChunk = absChange;
+    if (absChange > 15) bigChunkCount++;
+
+    events.push({
+        time: now,
+        deltaTime: deltaTime,
+        deltaLength: deltaLength
+    });
+
+    lastTime = now;
+    lastLength = currentLength;
+});
+
+// On submit, pack data
+document.querySelector("form").addEventListener("submit", () => {
+    endInput.value = Date.now();
+    dataInput.value = JSON.stringify({
+        events: events,
+        backspaceCount: backspaceCount,
+        maxChunk: maxChunk,
+        bigChunkCount: bigChunkCount,
+        idleTimes: idleTimes,
+        pasteDetected: pasteDetected
+    });
+});
+</script>
+</body>
+</html>
+
+
+<!-- version 1 -->
+
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Keystroke Anti-Cheat Demo</title>
+</head>
+<body>
+    <h2>Type your answer below</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <textarea id="answerBox" name="answer" rows="8" cols="60"></textarea><br><br>
+
+        <input type="hidden" name="keystroke_data" id="keystrokeData">
+        <input type="hidden" name="start_time" id="startTime">
+        <input type="hidden" name="end_time" id="endTime">
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+    let events = [];
+    let lastTime = null;
+    let lastLength = 0;
+    let backspaceCount = 0;
+    let started = false;
+
+    const box = document.getElementById("answerBox");
+    const dataInput = document.getElementById("keystrokeData");
+    const startInput = document.getElementById("startTime");
+    const endInput = document.getElementById("endTime");
+
+    box.addEventListener("focus", () => {
+        if (!started) {
+            started = true;
+            startInput.value = Date.now();
+        }
+    });
+
+    box.addEventListener("input", () => {
+        const now = Date.now();
+        const currentLength = box.value.length;
+
+        let deltaTime = lastTime ? (now - lastTime) : 0;
+        let deltaLength = currentLength - lastLength;
+
+        if (deltaLength < 0) {
+            backspaceCount += Math.abs(deltaLength);
+        }
+
+        events.push({
+            time: now,
+            deltaTime: deltaTime,
+            deltaLength: deltaLength
+        });
+
+        lastTime = now;
+        lastLength = currentLength;
+    });
+
+    document.querySelector("form").addEventListener("submit", () => {
+        endInput.value = Date.now();
+        dataInput.value = JSON.stringify({
+            events: events,
+            backspaceCount: backspaceCount
+        });
+    });
+    </script>
+</body>
+</html> -->

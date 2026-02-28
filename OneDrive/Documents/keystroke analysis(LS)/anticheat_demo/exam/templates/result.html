@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analysis Result</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #0f172a, #020617);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e5e7eb;
+        }
+
+        .card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 28px;
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .score {
+            font-size: 48px;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+
+        .ok { color: #22c55e; }
+        .warn { color: #f59e0b; }
+        .bad { color: #ef4444; }
+
+        .title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .desc {
+            color: #94a3b8;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 16px;
+            text-decoration: none;
+            background: linear-gradient(135deg, #38bdf8, #a78bfa);
+            color: #020617;
+            font-weight: 700;
+            padding: 10px 18px;
+            border-radius: 10px;
+            transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+        }
+
+        a:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.35);
+            opacity: 0.95;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="title">Behavior Analysis Result</div>
+        <div class="desc">Risk Score (0 = human, 100 = very suspicious)</div>
+
+        {% if risk > 60 %}
+            <div class="score bad">{{ risk }}</div>
+            <p> Very suspicious: looks like paste / voice / AI / automation.</p>
+        {% elif risk > 30 %}
+            <div class="score warn">{{ risk }}</div>
+            <p> Suspicious: needs review.</p>
+        {% else %}
+            <div class="score ok">{{ risk }}</div>
+            <p> Looks like normal human typing.</p>
+        {% endif %}
+
+        <a href="/">Try again</a>
+    </div>
+</body>
+</html>
